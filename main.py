@@ -18,29 +18,28 @@ if TOKEN is None:
 
 # MongoDB connection globals
 mongo_client = None
-INACTIVE_LIST = None
+db = None
 
 async def mongo_connect_loop():
-    global mongo_client, INACTIVE_LIST
+    global mongo_client, db
     delay = 10
     while True:
         try:
             mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
             mongo_client.server_info()  # Force connection check
             db = mongo_client["Nomic"]
-            INACTIVE_LIST = db["inactive_list"]
             print("Connected to MongoDB.")
             return
         except Exception as e:
-            print(f"❌ Could not connect to MongoDB: {e}. Retrying in {delay}s...")
-            INACTIVE_LIST = None
+            print(f"Could not connect to MongoDB: {e}. Retrying in {delay}s...")
+            db = None
             await asyncio.sleep(delay)
             delay = min(delay * 2, 600)  # Cap at 10 minutes
 
 async def mongo_reconnect_watcher():
-    global INACTIVE_LIST
+    global db
     while True:
-        if INACTIVE_LIST is None:
+        if db is None:
             await mongo_connect_loop()
         await asyncio.sleep(5)
 
@@ -66,17 +65,17 @@ async def on_ready():
 async def join(interaction: discord.Interaction):
     user_id = interaction.user.id
 
-    if INACTIVE_LIST is None:
+    if db is None:
         await interaction.response.send_message("Database is currently unavailable. Please try again later.", ephemeral=True)
         return
     try:
         # Check if already in DB
-        if INACTIVE_LIST.find_one({"user_id": user_id}):
+        if db["inactive_list"].find_one({"user_id": user_id}):
             await interaction.response.send_message(f"You are already on the Inactive Players List!", ephemeral=True)
             return
 
         # Add to DB
-        INACTIVE_LIST.insert_one({"user_id": user_id})
+        db["inactive_list"].insert_one({"user_id": user_id})
         await interaction.response.send_message(f"<@{user_id}> joined the Inactive Players List. 💤", ephemeral=True)
     except errors.PyMongoError as e:
         await interaction.response.send_message(f"The database is doing weird things, pls ping me (sqrt)\nError message: {str(e)}", ephemeral=True)
@@ -88,17 +87,17 @@ async def join(interaction: discord.Interaction):
 async def leave(interaction: discord.Interaction):
     user_id = interaction.user.id
 
-    if INACTIVE_LIST is None:
+    if db is None:
         await interaction.response.send_message("Database is currently unavailable. Please try again later.", ephemeral=True)
         return
     try:
         # Check if not in DB
-        if not INACTIVE_LIST.find_one({"user_id": user_id}):
+        if not db["inactive_list"].find_one({"user_id": user_id}):
             await interaction.response.send_message(f"You are not on the Inactive Players List!", ephemeral=True)
             return
 
         # Remove from DB
-        INACTIVE_LIST.delete_one({"user_id": user_id})
+        db["inactive_list"].delete_one({"user_id": user_id})
         await interaction.response.send_message(f"<@{user_id}> left the Inactive Players List.", ephemeral=True)
     except errors.PyMongoError as e:
         await interaction.response.send_message(f"The database is doing weird things, pls ping me (sqrt)\nError message: {str(e)}", ephemeral=True)
