@@ -50,14 +50,12 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 
-
 # Sync slash commands and start mongo watcher when bot is ready
 @bot.event
 async def on_ready():
     await bot.tree.sync()
     print(f"Bot logged in as {bot.user}")
     bot.loop.create_task(mongo_reconnect_watcher())
-
 
 
 # join
@@ -70,16 +68,20 @@ async def join(interaction: discord.Interaction):
         return
     try:
         # Check if already in DB
-        if db["inactive_list"].find_one({"user_id": user_id}):
+        player = db["player_data"].find_one({"id": user_id})
+        if not player:
+            await interaction.response.send_message("You are not in the database, please run /setup.", ephemeral=True)
+            return
+        
+        if player.get("inactive"):
             await interaction.response.send_message(f"You are already on the Inactive Players List!", ephemeral=True)
             return
 
-        # Add to DB
-        db["inactive_list"].insert_one({"user_id": user_id})
-        await interaction.response.send_message(f"<@{user_id}> joined the Inactive Players List. 💤", ephemeral=True)
+        # Update inactive status
+        db["player_data"].update_one({"id": user_id}, {"$set": {"inactive": True}})
+        await interaction.response.send_message(f"<@{user_id}> joined the Inactive Players List. 💤")
     except errors.PyMongoError as e:
         await interaction.response.send_message(f"The database is doing weird things, pls ping me (sqrt)\nError message: {str(e)}", ephemeral=True)
-
 
 
 # leave
@@ -91,14 +93,18 @@ async def leave(interaction: discord.Interaction):
         await interaction.response.send_message("Database is currently unavailable. Please try again later.", ephemeral=True)
         return
     try:
-        # Check if not in DB
-        if not db["inactive_list"].find_one({"user_id": user_id}):
+        # Check if player exists
+        player = db["player_data"].find_one({"id": user_id})
+        if not player:
+            await interaction.response.send_message("You are not in the database, please run /new_player.", ephemeral=True)
+            return
+        if not player.get("inactive"):
             await interaction.response.send_message(f"You are not on the Inactive Players List!", ephemeral=True)
             return
 
-        # Remove from DB
-        db["inactive_list"].delete_one({"user_id": user_id})
-        await interaction.response.send_message(f"<@{user_id}> left the Inactive Players List.", ephemeral=True)
+        # Update inactive status
+        db["player_data"].update_one({"id": user_id}, {"$set": {"inactive": False}})
+        await interaction.response.send_message(f"<@{user_id}> left the Inactive Players List.")
     except errors.PyMongoError as e:
         await interaction.response.send_message(f"The database is doing weird things, pls ping me (sqrt)\nError message: {str(e)}", ephemeral=True)
 
