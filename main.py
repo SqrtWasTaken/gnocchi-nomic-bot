@@ -1,4 +1,3 @@
-
 import os
 import asyncio
 import discord
@@ -58,6 +57,26 @@ async def on_ready():
     bot.loop.create_task(mongo_reconnect_watcher())
 
 
+# setup new account
+@bot.tree.command(name="new_player", description="Set up a new player account.")
+async def setup(interaction: discord.Interaction, user: discord.User):
+    user_id = user.id
+
+    if db is None:
+        await interaction.response.send_message("Database is currently unavailable. Please try again later.", ephemeral=True)
+        return
+    try:
+        # Check if already in DB
+        if db["player_data"].find_one({"id": user_id}):
+            await interaction.response.send_message(f"You are already set up in the database!", ephemeral=True)
+            return
+        
+        # Add to DB
+        db["player_data"].insert_one({"id": user_id, "inactive": False})
+        await interaction.response.send_message(f"<@{user_id}> has been set up in the database. You can now use other commands.", ephemeral=True)
+    except errors.PyMongoError as e:
+        await interaction.response.send_message(f"The database is doing weird things, pls ping me (sqrt)\nError message: {str(e)}", ephemeral=True)
+
 # join
 @bot.tree.command(name="join_inactive", description="Join the Inactive Players List.")
 async def join(interaction: discord.Interaction):
@@ -70,7 +89,7 @@ async def join(interaction: discord.Interaction):
         # Check if already in DB
         player = db["player_data"].find_one({"id": user_id})
         if not player:
-            await interaction.response.send_message("You are not in the database, please run /setup.", ephemeral=True)
+            await interaction.response.send_message("You are not in the database, please run /new_player.", ephemeral=True)
             return
         
         if player.get("inactive"):
