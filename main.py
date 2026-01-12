@@ -9,39 +9,6 @@ from dotenv import load_dotenv
 dirname = os.path.dirname(__file__)
 data_file = os.path.join(dirname, 'rules.db')
 
-# conn = sqlite3.connect(data_file)
-# cursor = conn.cursor()
-
-# # cursor.execute('''
-# #     CREATE TABLE IF NOT EXISTS data (
-# #         id INTEGER PRIMARY KEY AUTOINCREMENT,
-# #         number INTEGER,
-# #         text TEXT
-# #     )
-# # ''')
-
-# # sample_data = [
-# #     (205,'''An adopted rule change takes full effect at the moment of the completion of the vote that adopted it.''',1),
-# #     (206,'''When a proposed rule change is defeated, the player who proposed it loses 10 points.''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-# #     (1,'''text''',1),
-
-# # ]
-
-# # cursor.executemany('INSERT INTO data (number, text) VALUES (?, ?)', sample_data)
-
-# conn.commit()
-# conn.close()
-
 # Load token
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
@@ -54,6 +21,29 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# for sending long messages
+def last_space_index(text):
+    if text.rfind(' ') == -1:
+        return len(text)
+    else:
+        return text.rfind(' ')
+
+async def send_long_message(msg, interaction):
+    if len(msg) > 2000:
+        next_msg = msg[0:last_space_index(msg[0:2000])]
+        remaining = len(msg) - len(next_msg)
+        await interaction.response.send_message(next_msg)
+        while remaining > 0:
+            if remaining > 2000:
+                next_msg = msg[len(msg)-remaining:last_space_index(msg[0:len(msg)-remaining+2000])]
+                remaining -= len(next_msg)
+                await interaction.channel.send(next_msg)
+            else:
+                await interaction.channel.send(msg[len(msg)-remaining:])
+                break
+    else:
+        await interaction.response.send_message(msg)
 
 @bot.event
 async def on_ready():
@@ -76,7 +66,7 @@ async def rule(interaction: discord.Interaction, number: int):
             text = 'Mutable'
         else:
             text = 'Immutable'
-        await interaction.response.send_message("**" + text + ' Rule ' + str(number) + "**\n\n" + row[0])
+        await send_long_message("**" + text + ' Rule ' + str(number) + "**\n\n" + row[0], interaction)
 
     conn.close()
 
