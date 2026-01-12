@@ -22,6 +22,11 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print(f"Bot logged in as {bot.user}")
+
 # for sending long messages
 def last_space_index(text):
     if text.rfind(' ') == -1:
@@ -44,11 +49,6 @@ async def send_long_message(msg, interaction):
                 break
     else:
         await interaction.response.send_message(msg)
-
-@bot.event
-async def on_ready():
-    await bot.tree.sync()
-    print(f"Bot logged in as {bot.user}")
 
 # rule lookup
 @bot.tree.command(name="rule", description="Look up a rule.")
