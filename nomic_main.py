@@ -11,10 +11,10 @@ data_file = os.path.join(dirname, 'rules.db')
 
 # Load token
 load_dotenv()
-TOKEN = os.getenv("TOKEN")
+NOMIC_TOKEN = os.getenv("NOMIC_TOKEN")
 
-if TOKEN is None:
-    raise ValueError("Discord bot TOKEN environment variable not set.")
+if NOMIC_TOKEN is None:
+    raise ValueError("Discord bot NOMIC_TOKEN environment variable not set.")
 
 # Bot setup
 intents = discord.Intents.default()
@@ -50,6 +50,15 @@ async def send_long_message(msg, interaction):
     else:
         await interaction.response.send_message(msg)
 
+
+# ======COMMANDS======
+# help
+@bot.tree.command(name="help", description="View commands.")
+async def help(interaction: discord.Interaction):
+    embedVar = discord.Embed(title="Help", description='''`/rule [number]` - Look up a rule.''', color=0xf5c12f)
+    await interaction.response.send_message(embed=embedVar)
+
+
 # rule lookup
 @bot.tree.command(name="rule", description="Look up a rule.")
 async def rule(interaction: discord.Interaction, number: int):
@@ -69,5 +78,7 @@ async def rule(interaction: discord.Interaction, number: int):
         await send_long_message("**" + text + ' Rule ' + str(number) + "**\n\n" + row[0], interaction)
 
     conn.close()
+# ====================
 
-bot.run(TOKEN)
+
+bot.run(NOMIC_TOKEN)
