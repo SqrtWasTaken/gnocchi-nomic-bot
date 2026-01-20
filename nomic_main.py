@@ -1,4 +1,5 @@
 import os
+import re
 import discord
 import sqlite3
 from discord import app_commands
@@ -78,6 +79,32 @@ async def rule(interaction: discord.Interaction, number: int):
         await send_long_message("**" + text + ' Rule ' + str(number) + "**\n\n" + row[0], interaction)
 
     conn.close()
+
+
+# find rule
+@bot.tree.command(name="find_text", description="Find rules containing a string.")
+async def find_text(interaction: discord.Interaction, text: str):
+    conn = sqlite3.connect(data_file)
+    cursor = conn.cursor()
+    cursor.execute('SELECT number, text FROM data')
+    rows = cursor.fetchall()
+    conn.close()
+
+    found_rules = []
+    for row in rows:
+        if text.lower() in re.sub(r'\W+', '', row[1].lower()):
+            found_rules.append(str(row[0]))
+            print(re.sub(r'\W+', '', row[1].lower()))
+    found_rules.sort()
+
+    if len(found_rules) == 0:
+        await interaction.response.send_message('Excuse me. It does not exist.')
+    else:
+        msg = 'Rules containing `' + text.lower() + '`: ' + ', '.join(found_rules)
+        if len(msg) > 2000:
+            await interaction.response.send_message('what\'s the point of using this to find ONE exact rule? YOUR message is TOO LONG\nanyway your results are: ' + ', '.join(found_rules))
+        await interaction.response.send_message('Rules containing `' + text.lower() + '`: ' + ', '.join(found_rules))
+
 # ====================
 
 
