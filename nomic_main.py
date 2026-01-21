@@ -93,7 +93,7 @@ async def find_text(interaction: discord.Interaction, text: str):
 
     found_rules = []
     for row in rows:
-        if text.lower() in re.sub(r'[^a-zA-Z0-9]+', '', row[1].lower()):
+        if re.sub(r'[^a-zA-Z0-9]+', '', text.lower()) in re.sub(r'[^a-zA-Z0-9]+', '', row[1].lower()):
             found_rules.append((row[0], ' '.join(row[1].split(' ')[0:min(5, len(row[1].split(' ')))])))
     found_rules.sort(key=lambda tup: tup[0])
 
