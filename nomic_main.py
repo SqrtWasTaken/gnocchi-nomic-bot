@@ -56,9 +56,10 @@ async def send_long_message(msg, interaction):
 # help
 @bot.tree.command(name="help", description="View commands.")
 async def help(interaction: discord.Interaction):
-    embedVar = discord.Embed(title="Help", description='''`/rule [number]` - Look up a rule.
-                             `/find_text [text]` - Look up rules containing a string.''', color=0xf5c12f)
-    await interaction.response.send_message(embed=embedVar)
+    await interaction.response.send_message(embed=discord.Embed(title="Help", 
+                            description='''`/rule [number]` - Look up a rule.
+`/find_text [text]` - Look up rules containing a string. Ignores all alphanumeric characters.''', 
+color=0xf5c12f))
 
 
 # rule lookup
