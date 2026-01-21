@@ -35,21 +35,21 @@ def last_space_index(text):
     else:
         return text.rfind(' ')
 
-async def send_long_message(msg, interaction):
-    if len(msg) > 2000:
-        next_msg = msg[0:last_space_index(msg[0:2000])]
+async def send_long_embeds(title, msg, interaction):
+    if len(msg) > 4096:
+        next_msg = msg[0:last_space_index(msg[0:4096])]
         remaining = len(msg) - len(next_msg)
-        await interaction.response.send_message(next_msg)
+        await interaction.response.send_message(embed=discord.Embed(title=title, description=next_msg, color=0xf5c12f))
         while remaining > 0:
-            if remaining > 2000:
-                next_msg = msg[len(msg)-remaining:last_space_index(msg[0:len(msg)-remaining+2000])]
+            if remaining > 4096:
+                next_msg = msg[len(msg)-remaining:last_space_index(msg[0:len(msg)-remaining+4096])]
                 remaining -= len(next_msg)
-                await interaction.channel.send(next_msg)
+                await interaction.channel.send(embed=discord.Embed(title=title, description=next_msg, color=0xf5c12f))
             else:
-                await interaction.channel.send(msg[len(msg)-remaining:])
+                await interaction.channel.send(embed=discord.Embed(title=title, description=msg[len(msg)-remaining:], color=0xf5c12f))
                 break
     else:
-        await interaction.response.send_message(msg)
+        await interaction.response.send_message(embed=discord.Embed(title=title, description=msg, color=0xf5c12f))
 
 
 # ======COMMANDS======
@@ -78,7 +78,8 @@ async def rule(interaction: discord.Interaction, number: int):
             text = 'Mutable'
         else:
             text = 'Immutable'
-        await send_long_message("**" + text + ' Rule ' + str(number) + "**\n\n" + row[0], interaction)
+
+        await send_long_embeds(text+' Rule ' + str(number), row[0], interaction)
 
     conn.close()
 
