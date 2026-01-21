@@ -56,7 +56,8 @@ async def send_long_message(msg, interaction):
 # help
 @bot.tree.command(name="help", description="View commands.")
 async def help(interaction: discord.Interaction):
-    embedVar = discord.Embed(title="Help", description='''`/rule [number]` - Look up a rule.''', color=0xf5c12f)
+    embedVar = discord.Embed(title="Help", description='''`/rule [number]` - Look up a rule.
+                             `/find_text [text]` - Look up rules containing a string.''', color=0xf5c12f)
     await interaction.response.send_message(embed=embedVar)
 
 
@@ -92,18 +93,23 @@ async def find_text(interaction: discord.Interaction, text: str):
 
     found_rules = []
     for row in rows:
-        if text.lower() in re.sub(r'\W+', '', row[1].lower()):
-            found_rules.append(str(row[0]))
-            print(re.sub(r'\W+', '', row[1].lower()))
-    found_rules.sort()
+        if text.lower() in re.sub(r'[^a-zA-Z0-9]+', '', row[1].lower()):
+            found_rules.append((row[0], ' '.join(row[1].split(' ')[0:min(5, len(row[1].split(' ')))])))
+    found_rules.sort(key=lambda tup: tup[0])
 
     if len(found_rules) == 0:
         await interaction.response.send_message('Excuse me. It does not exist.')
     else:
-        msg = 'Rules containing `' + text.lower() + '`: ' + ', '.join(found_rules)
-        if len(msg) > 2000:
-            await interaction.response.send_message('what\'s the point of using this to find ONE exact rule? YOUR message is TOO LONG\nanyway your results are: ' + ', '.join(found_rules))
-        await interaction.response.send_message('Rules containing `' + text.lower() + '`: ' + ', '.join(found_rules))
+        desc = 'Rules containing `' + text.lower() + '`:\n'
+        for rule in found_rules:
+            desc += '\n' + str(rule[0]) + ': ' + rule[1] + '...'
+
+        #embedVar = discord.Embed(title="Results", description=desc, color=0xf5c12f)
+
+        # msg = 'Rules containing `' + text.lower() + '`: ' + ', '.join(found_rules)
+        # if len(msg) > 2000:
+        #     await interaction.response.send_message('what\'s the point of using this to find ONE exact rule? YOUR message is TOO LONG\nanyway your results are: ' + ', '.join(found_rules))
+        await interaction.response.send_message(embed=discord.Embed(title="Results", description=desc, color=0xf5c12f))
 
 # ====================
 
