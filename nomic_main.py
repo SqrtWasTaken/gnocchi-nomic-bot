@@ -5,6 +5,9 @@ import sqlite3
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # Database setup
 dirname = os.path.dirname(__file__)
