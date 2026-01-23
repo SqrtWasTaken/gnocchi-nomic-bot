@@ -9,6 +9,9 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+import certifi
+os.environ["SSL_CERT_FILE"] = certifi.where()
+
 # Database setup
 dirname = os.path.dirname(__file__)
 data_file = os.path.join(dirname, 'rules.db')
