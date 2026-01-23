@@ -1,2 +1,3 @@
 .env
 for_running_commands.py
+__pycache__/
