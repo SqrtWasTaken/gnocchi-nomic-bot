@@ -40,7 +40,7 @@ async def on_ready():
 # for sending long messages
 def last_space_index(text):
     if text.rfind(' ') == -1:
-        return len(text)
+        return len(text) - 1
     else:
         return text.rfind(' ')
 
@@ -51,7 +51,7 @@ async def send_long_embeds(title, msg, interaction, max_length):
         await interaction.response.send_message(embed=discord.Embed(title=title, description=next_msg, color=0xf5c12f))
         while remaining > 0:
             if remaining > max_length:
-                next_msg = msg[len(msg)-remaining:last_space_index(msg[0:len(msg)-remaining+max_length])]
+                next_msg = msg[len(msg)-remaining:(len(msg)-remaining + last_space_index(msg[len(msg)-remaining:len(msg)-remaining+max_length])+1)] # this works. trust.
                 remaining -= len(next_msg)
                 await interaction.channel.send(embed=discord.Embed(title=title, description=next_msg, color=0xf5c12f))
             else:
@@ -66,7 +66,7 @@ async def send_menu(title, msg, interaction, max_length):
     remaining = len(msg)
     while remaining > 0:
         if remaining > max_length:
-            next_msg = msg[len(msg)-remaining:last_space_index(msg[0:len(msg)-remaining+max_length])]
+            next_msg = msg[len(msg)-remaining:(len(msg)-remaining + last_space_index(msg[len(msg)-remaining:len(msg)-remaining+max_length])+1)]
             remaining -= len(next_msg)
             menu.add_page(discord.Embed(title=title, description=next_msg, color=0xf5c12f))
         else:
