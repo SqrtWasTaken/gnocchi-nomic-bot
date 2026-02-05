@@ -2,6 +2,7 @@ import os
 import re
 import discord
 import sqlite3
+import math
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -120,6 +121,7 @@ async def rule(interaction: discord.Interaction, number: int, max_length: int=40
 
 # find rule
 @bot.tree.command(name="find_text", description="Find rules containing a string.")
+@app_commands.describe(text='Text to be searched for')
 async def find_text(interaction: discord.Interaction, text: str):
     conn = sqlite3.connect(data_file)
     cursor = conn.cursor()
@@ -146,6 +148,22 @@ async def find_text(interaction: discord.Interaction, text: str):
         # if len(msg) > 2000:
         #     await interaction.response.send_message('what\'s the point of using this to find ONE exact rule? YOUR message is TOO LONG\nanyway your results are: ' + ', '.join(found_rules))
         await interaction.response.send_message(embed=discord.Embed(title="Results", description=desc, color=0xf5c12f))
+
+
+# challenge point calculator
+@bot.tree.command(name="challenge", description="Look up challenge points for n players.")
+@app_commands.describe(players='Number of players in the challenge')
+async def challenge(interaction: discord.Interaction, players: int):
+    if players == 1:
+        await interaction.response.send_message('You can\'t have a challenge with only one player!')
+    elif players % 2 == 0:
+        i = max(1, math.ceil(10 / (players-1)))
+        points = [str(i*d) for d in range(-players+1, players, 2)]
+        await interaction.response.send_message(', '.join(points))
+    else:
+        i = max(1, math.ceil(20 / (players-1)))        
+        points = [str(i*d) for d in range(-(players-1)//2, (players+1)//2)]
+        await interaction.response.send_message(', '.join(points))
 
 # ====================
 
