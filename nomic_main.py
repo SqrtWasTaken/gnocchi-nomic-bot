@@ -85,7 +85,8 @@ async def send_menu(title, msg, interaction, max_length):
 async def help(interaction: discord.Interaction):
     await interaction.response.send_message(embed=discord.Embed(title="Help", 
                             description='''`/rule [number] [max_length]` - Look up a rule. Enter 0 to send the whole rule across multiple messages, or a number between 1-4096 to send a single embed with pagination.
-`/find_text [text]` - Look up rules containing a string. Ignores all alphanumeric characters.''', 
+`/find_text [text]` - Look up rules containing a string. Ignores all alphanumeric characters.
+`/challenge [n]` - Look up point values for multiplayer challenges.''', 
 color=0xf5c12f))
 
 
@@ -142,11 +143,6 @@ async def find_text(interaction: discord.Interaction, text: str):
         for rule in found_rules:
             desc += '\n' + str(rule[0]) + ': ' + rule[1] + '...'
 
-        #embedVar = discord.Embed(title="Results", description=desc, color=0xf5c12f)
-
-        # msg = 'Rules containing `' + text.lower() + '`: ' + ', '.join(found_rules)
-        # if len(msg) > 2000:
-        #     await interaction.response.send_message('what\'s the point of using this to find ONE exact rule? YOUR message is TOO LONG\nanyway your results are: ' + ', '.join(found_rules))
         await interaction.response.send_message(embed=discord.Embed(title="Results", description=desc, color=0xf5c12f))
 
 
@@ -154,16 +150,24 @@ async def find_text(interaction: discord.Interaction, text: str):
 @bot.tree.command(name="challenge", description="Look up challenge points for n players.")
 @app_commands.describe(players='Number of players in the challenge')
 async def challenge(interaction: discord.Interaction, players: int):
-    if players == 1:
-        await interaction.response.send_message('You can\'t have a challenge with only one player!')
+    if players <= 1:
+        await interaction.response.send_message('You need to challenge at least 2 players!')
     elif players % 2 == 0:
         i = max(1, math.ceil(10 / (players-1)))
         points = [str(i*d) for d in range(-players+1, players, 2)]
-        await interaction.response.send_message(', '.join(points))
+        msg = ', '.join(points)
+        if len(msg) > 2000:
+            await interaction.response.send_message('why is bro trying to challenge the whole world')
+        else:
+            await interaction.response.send_message(', '.join(points))
     else:
         i = max(1, math.ceil(20 / (players-1)))        
         points = [str(i*d) for d in range(-(players-1)//2, (players+1)//2)]
-        await interaction.response.send_message(', '.join(points))
+        msg = ', '.join(points)
+        if len(msg) > 2000:
+            await interaction.response.send_message('why is bro trying to challenge the whole world')
+        else:
+            await interaction.response.send_message(', '.join(points))
 
 # ====================
 
