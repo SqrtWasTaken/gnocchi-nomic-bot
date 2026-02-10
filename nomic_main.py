@@ -122,8 +122,8 @@ async def rule(interaction: discord.Interaction, number: int, max_length: int=40
 
 # find rule
 @bot.tree.command(name="find_text", description="Find rules containing a string.")
-@app_commands.describe(text='Text to be searched for')
-async def find_text(interaction: discord.Interaction, text: str):
+@app_commands.describe(text='Text to be searched for', hidden='Send as an ephemeral message')
+async def find_text(interaction: discord.Interaction, text: str, hidden: bool=False):
     conn = sqlite3.connect(data_file)
     cursor = conn.cursor()
     cursor.execute('SELECT number, text FROM data')
@@ -143,7 +143,7 @@ async def find_text(interaction: discord.Interaction, text: str):
         for rule in found_rules:
             desc += '\n' + str(rule[0]) + ': ' + rule[1] + '...'
 
-        await interaction.response.send_message(embed=discord.Embed(title="Results", description=desc, color=0xf5c12f))
+        await interaction.response.send_message(embed=discord.Embed(title="Results", description=desc, color=wheat_color), ephemeral=hidden)
 
 
 # challenge point calculator
