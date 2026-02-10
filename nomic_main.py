@@ -33,6 +33,8 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+wheat_color = 0xf5c12f
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
@@ -49,17 +51,17 @@ async def send_long_embeds(title, msg, interaction, max_length):
     if len(msg) > max_length:
         next_msg = msg[0:last_space_index(msg[0:max_length])]
         remaining = len(msg) - len(next_msg)
-        await interaction.response.send_message(embed=discord.Embed(title=title, description=next_msg, color=0xf5c12f))
+        await interaction.response.send_message(embed=discord.Embed(title=title, description=next_msg, color=wheat_color))
         while remaining > 0:
             if remaining > max_length:
                 next_msg = msg[len(msg)-remaining:(len(msg)-remaining + last_space_index(msg[len(msg)-remaining:len(msg)-remaining+max_length])+1)] # this works. trust.
                 remaining -= len(next_msg)
-                await interaction.channel.send(embed=discord.Embed(title=title, description=next_msg, color=0xf5c12f))
+                await interaction.channel.send(embed=discord.Embed(title=title, description=next_msg, color=wheat_color))
             else:
-                await interaction.channel.send(embed=discord.Embed(title=title, description=msg[len(msg)-remaining:], color=0xf5c12f))
+                await interaction.channel.send(embed=discord.Embed(title=title, description=msg[len(msg)-remaining:], color=wheat_color))
                 break
     else:
-        await interaction.response.send_message(embed=discord.Embed(title=title, description=msg, color=0xf5c12f))
+        await interaction.response.send_message(embed=discord.Embed(title=title, description=msg, color=wheat_color))
 
 async def send_menu(title, msg, interaction, max_length):
     menu = ViewMenu(interaction, menu_type=ViewMenu.TypeEmbed)
@@ -69,9 +71,9 @@ async def send_menu(title, msg, interaction, max_length):
         if remaining > max_length:
             next_msg = msg[len(msg)-remaining:(len(msg)-remaining + last_space_index(msg[len(msg)-remaining:len(msg)-remaining+max_length])+1)]
             remaining -= len(next_msg)
-            menu.add_page(discord.Embed(title=title, description=next_msg, color=0xf5c12f))
+            menu.add_page(discord.Embed(title=title, description=next_msg, color=wheat_color))
         else:
-            menu.add_page(discord.Embed(title=title, description=msg[len(msg)-remaining:], color=0xf5c12f))
+            menu.add_page(discord.Embed(title=title, description=msg[len(msg)-remaining:], color=wheat_color))
             break
     
     menu.add_button(ViewButton.back())
@@ -87,7 +89,7 @@ async def help(interaction: discord.Interaction):
                             description='''`/rule [number] [max_length]` - Look up a rule. Enter 0 to send the whole rule across multiple messages, or a number between 1-4096 to send a single embed with pagination.
 `/find_text [text]` - Look up rules containing a string. Ignores all alphanumeric characters.
 `/challenge [n]` - Look up point values for multiplayer challenges.''', 
-color=0xf5c12f))
+color=wheat_color))
 
 
 # rule lookup
