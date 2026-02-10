@@ -8,7 +8,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from reactionmenu.views_menu import ViewMenu
 from reactionmenu.buttons import ViewButton
-
+import random
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -171,6 +171,25 @@ async def challenge(interaction: discord.Interaction, players: int):
         else:
             await interaction.response.send_message(', '.join(points))
 
+
+# random rule for tsardom
+@bot.tree.command(name="stalin", description="Pick a random rule to be DESTROYED.")
+async def stalin_step_1(interaction: discord.Interaction):
+    conn = sqlite3.connect(data_file)
+    cursor = conn.cursor()
+    cursor.execute('SELECT number, text, mutable FROM data')
+    rows = cursor.fetchall()
+    conn.close()
+
+    rows.sort(key=lambda x: x[0]) # sort by number
+
+    # roll
+    roll = random.randint(0, len(rows)-1) # remember to add 1
+    selected_rule = rows[roll]
+
+    desc = 'Roll result (d' + str(len(rows)) + '): `' + str(roll+1) + '`\nSelected rule: `' + str(selected_rule[0]) + '`'
+    # display roll result, selected rule
+    await interaction.response.send_message(embed = discord.Embed(title="Time for the Purge.", description=desc, color=wheat_color))
 # ====================
 
 
