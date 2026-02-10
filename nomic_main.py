@@ -178,7 +178,7 @@ async def challenge(interaction: discord.Interaction, players: int):
 async def stalin(interaction: discord.Interaction):
     conn = sqlite3.connect(data_file)
     cursor = conn.cursor()
-    cursor.execute('SELECT number, text, mutable FROM data')
+    cursor.execute('SELECT number, text FROM data')
     rows = cursor.fetchall()
     conn.close()
 
