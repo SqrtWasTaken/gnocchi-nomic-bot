@@ -86,9 +86,10 @@ async def send_menu(title, msg, interaction, max_length):
 @bot.tree.command(name="help", description="View commands.")
 async def help(interaction: discord.Interaction):
     await interaction.response.send_message(embed=discord.Embed(title="Help", 
-                            description='''`/rule [number] [max_length]` - Look up a rule. Enter 0 to send the whole rule across multiple messages, or a number between 1-4096 to send a single embed with pagination.
-`/find_text [text]` - Look up rules containing a string. Ignores all alphanumeric characters.
-`/challenge [n]` - Look up point values for multiplayer challenges.''', 
+description='''`/rule [number] [max_length]` - Look up a rule. Enter 0 to send the whole rule across multiple messages, or a number between 1-4096 to send a single embed with pagination.
+`/find_text [text] [hidden]` - Look up rules containing a string. Ignores all alphanumeric characters. Hidden (default=False) sends the message ephemerally.
+`/challenge [n]` - Look up point values for multiplayer challenges.
+`/stalin` - Execute step 1 of Stalin's algorithm.''', 
 color=wheat_color))
 
 
@@ -174,7 +175,7 @@ async def challenge(interaction: discord.Interaction, players: int):
 
 # random rule for tsardom
 @bot.tree.command(name="stalin", description="Pick a random rule to be DESTROYED.")
-async def stalin_step_1(interaction: discord.Interaction):
+async def stalin(interaction: discord.Interaction):
     conn = sqlite3.connect(data_file)
     cursor = conn.cursor()
     cursor.execute('SELECT number, text, mutable FROM data')
