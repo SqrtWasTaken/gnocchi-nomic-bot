@@ -18,7 +18,7 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 
 # Database setup
 dirname = os.path.dirname(__file__)
-data_file = os.path.join(dirname, 'rules.db')
+data_file = os.path.join(dirname, 'data.db')
 
 # Load token
 load_dotenv()
@@ -39,6 +39,8 @@ wheat_color = 0xf5c12f
 async def on_ready():
     await bot.tree.sync()
     print(f"Bot logged in as {bot.user}")
+
+# ======Functions======
 
 # for sending long messages
 def last_space_index(text):
@@ -81,6 +83,7 @@ async def send_menu(title, msg, interaction, max_length):
     
     await menu.start()
 
+
 # ======COMMANDS======
 # help
 @bot.tree.command(name="help", description="View commands.")
@@ -101,7 +104,7 @@ async def rule(interaction: discord.Interaction, number: int, max_length: int=40
     conn = sqlite3.connect(data_file)
     cursor = conn.cursor()
 
-    cursor.execute('SELECT text, mutable FROM data WHERE number=?', (number,))
+    cursor.execute('SELECT text, mutable FROM rules WHERE number=?', (number,))
     row = cursor.fetchone()
 
     if row is None:
@@ -129,7 +132,7 @@ async def rule(interaction: discord.Interaction, number: int, max_length: int=40
 async def find_text(interaction: discord.Interaction, text: str, hidden: bool=False):
     conn = sqlite3.connect(data_file)
     cursor = conn.cursor()
-    cursor.execute('SELECT number, text FROM data')
+    cursor.execute('SELECT number, text FROM rules')
     rows = cursor.fetchall()
     conn.close()
 
@@ -178,7 +181,7 @@ async def challenge(interaction: discord.Interaction, players: int):
 async def stalin(interaction: discord.Interaction):
     conn = sqlite3.connect(data_file)
     cursor = conn.cursor()
-    cursor.execute('SELECT number, text FROM data')
+    cursor.execute('SELECT number, text FROM rules')
     rows = cursor.fetchall()
     conn.close()
 
@@ -191,6 +194,7 @@ async def stalin(interaction: discord.Interaction):
     desc = 'Roll result (d' + str(len(rows)) + '): `' + str(roll+1) + '`\nSelected rule: `' + str(selected_rule[0]) + '`'
     # display roll result, selected rule
     await interaction.response.send_message(embed = discord.Embed(title="Time for the Purge.", description=desc, color=wheat_color))
+
 # ====================
 
 
