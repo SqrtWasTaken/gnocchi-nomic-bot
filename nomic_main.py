@@ -10,6 +10,7 @@ from reactionmenu.views_menu import ViewMenu
 from reactionmenu.buttons import ViewButton
 import random
 import logging
+import typing
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,6 +20,28 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 # Database setup
 dirname = os.path.dirname(__file__)
 data_file = os.path.join(dirname, 'data.db')
+
+with sqlite3.connect(data_file) as conn:
+    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            number INTEGER,
+            text TEXT,
+            mutable INTEGER
+        )
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scores (
+            discord_id INTEGER UNIQUE,
+            name TEXT UNIQUE,
+            score INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
 
 # Load token
 load_dotenv()
@@ -176,7 +199,7 @@ async def challenge(interaction: discord.Interaction, players: int):
             await interaction.response.send_message(', '.join(points))
 
 
-# random rule for tsardom
+# random rule selector for tsardom
 @bot.tree.command(name="stalin", description="Pick a random rule to be DESTROYED.")
 async def stalin(interaction: discord.Interaction):
     conn = sqlite3.connect(data_file)
@@ -196,6 +219,249 @@ async def stalin(interaction: discord.Interaction):
     await interaction.response.send_message(embed = discord.Embed(title="Time for the Purge.", description=desc, color=wheat_color))
 
 # ====================
+
+
+# Scores (by pyz18)
+# ================== HELPERS ==================
+
+def default_score():
+    """90% of the average score of all players, rounded down"""
+    with sqlite3.connect(data_file) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT AVG(score) FROM scores")
+        avg_score = cur.fetchone()[0] or 0
+        return int(avg_score * 0.9)
+
+
+def add_score(score: int, discord_id: int | None = None, name: str | None = None):
+    key_column = "discord_id" if discord_id is not None else "name"
+    key_value = discord_id if discord_id is not None else name
+
+    if key_value is None:
+        raise ValueError("Either discord_id or name must be provided")
+
+    with sqlite3.connect(data_file) as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                f"INSERT INTO scores ({key_column}, score) VALUES (?, ?)",
+                (key_value, score),
+            )
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+
+def update_score(delta: int, discord_id: int | None = None, name: str | None = None):
+    key_column = "discord_id" if discord_id is not None else "name"
+    key_value = discord_id if discord_id is not None else name
+
+    if key_value is None:
+        raise ValueError("Either discord_id or name must be provided")
+
+    with sqlite3.connect(data_file) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"""
+            UPDATE scores SET score = score + ?
+            WHERE {key_column} = ?
+            RETURNING score - ?, score
+            """,
+            (delta, key_value, delta),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            return None, None
+        before_score, after_score = row
+
+        conn.commit()
+        return before_score, after_score
+
+
+def remove_score(discord_id: int | None = None, name: str | None = None):
+    key_column = "discord_id" if discord_id is not None else "name"
+    key_value = discord_id if discord_id is not None else name
+
+    if key_value is None:
+        raise ValueError("Either discord_id or name must be provided")
+
+    with sqlite3.connect(data_file) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"DELETE FROM scores WHERE {key_column} = ?",
+            (key_value,),
+        )
+        conn.commit()
+        return cursor.rowcount > 0  # Return True if a row was deleted
+
+
+def get_scores(limit, offset):
+    with sqlite3.connect(data_file) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT discord_id, name, score FROM scores
+            ORDER BY score DESC
+            LIMIT ? OFFSET ?
+            """,
+            (limit, offset),
+        )
+        return cursor.fetchall()
+
+
+def is_user(guild: discord.Guild | None, name: str):
+    if guild is None:
+        return
+    target_lower = name.lower()
+    return discord.utils.find(
+        lambda m: target_lower in [m.display_name.lower(), m.name.lower()],
+        guild.members,
+    )
+
+
+def player_info(
+    guild: discord.Guild | None, member: discord.Member | None, name: str | None
+):
+    if member:
+        return member.id, member.display_name
+    if not name or not guild:
+        return
+
+    if member := is_user(guild, name):
+        return member.id, member.display_name
+    return None, name[:256].strip()
+
+
+# ================== COMMANDS ==================
+
+@bot.tree.command(description="Add a new player to the score database.")
+@app_commands.describe(
+    member="Discord user to add (mention or username).",
+    name="Non-Discord player name to add (ignored if member is provided).",
+)
+async def add(
+    interaction: discord.Interaction,
+    member: discord.Member | None = None,
+    name: str | None = None,
+):
+    if not (info := player_info(interaction.guild, member, name)):
+        await interaction.response.send_message(
+            "You must provide either a member or a name to add.",
+            ephemeral=True,
+        )
+        return
+
+    discord_id, name = info
+
+    t = "Doug" if discord_id is None else "User"
+    starting_score = default_score()
+    if add_score(starting_score, discord_id, name):
+        await interaction.response.send_message(
+            f"{t} {name} was added with {starting_score} points!"
+        )
+    else:
+        await interaction.response.send_message(
+            f"{t} {name} was not added! They may already exist.",
+            ephemeral=True,
+        )
+
+
+@bot.tree.command(description="Update or view a player's score.")
+@app_commands.describe(
+    member="Discord user to update (mention or username). Command user by default.",
+    name="Non-Discord player name to update (ignored if member is provided).",
+    delta="Amount to change the score by (default 0 to just view score).",
+)
+async def update(
+    interaction: discord.Interaction,
+    member: discord.Member | None = None,
+    name: str | None = None,
+    delta: int = 0,
+):
+    if not (info := player_info(interaction.guild, member, name)):
+        discord_id = interaction.user.id
+        name = interaction.user.display_name
+    else:
+        discord_id, name = info
+
+    t = "Doug" if discord_id is None else "User"
+    before_score, after_score = update_score(delta, discord_id, name)
+    if before_score is None:
+        await interaction.response.send_message(
+            f"{t} {name} does not exist. Please add them first.",
+            ephemeral=True,
+        )
+    elif delta == 0:
+        await interaction.response.send_message(f"{t} {name}'s score: {before_score}")
+    else:
+        await interaction.response.send_message(
+            f"{t} {name}'s score: {before_score} -> {after_score}"
+        )
+
+
+@bot.tree.command(description="Remove a player from the score database.")
+@app_commands.describe(
+    member="Discord user to remove (mention or username).",
+    name="Non-Discord player name to remove (ignored if member is provided).",
+)
+async def remove(
+    interaction: discord.Interaction,
+    member: discord.Member | None = None,
+    name: str | None = None,
+):
+    if not (info := player_info(interaction.guild, member, name)):
+        await interaction.response.send_message(
+            "You must provide either a member or a name to remove.",
+            ephemeral=True,
+        )
+        return
+
+    discord_id, name = info
+
+    t = "Doug" if discord_id is None else "User"
+    if remove_score(discord_id, name):
+        await interaction.response.send_message(f"{t} {name} was removed!")
+    else:
+        await interaction.response.send_message(
+            f"{t} {name} does not exist.", ephemeral=True
+        )
+
+
+@bot.tree.command(description="View the top players on the leaderboard.")
+@app_commands.describe(
+    number="Number of players to show on the leaderboard (default/max 25).",
+    start="Place to start the leaderboard from (default 1).",
+)
+async def leaderboard(
+    interaction: discord.Interaction, number: int = 25, start: int = 1
+):
+    guild = interaction.guild
+    if guild is None:
+        await interaction.response.send_message(
+            "This command can only be used in a server.",
+            ephemeral=True,
+        )
+        return
+
+    top_scores = get_scores(limit=min(number, 25), offset=max(start - 1, 0))
+
+    embed = discord.Embed(title="Leaderboard", color=discord.Color.blue())
+
+    for i, (discord_id, name, score) in enumerate(top_scores, start=start):
+        if discord_id is not None:
+            user = guild.get_member(discord_id)
+            display_name = user.display_name if user else f"User {discord_id}"
+        else:
+            display_name = name
+
+        t = "Doug" if discord_id is None else "User"
+
+        embed.add_field(
+            name=f"{i}. {t} {display_name}", value=f"Score: {score}", inline=False
+        )
+
+    await interaction.response.send_message(embed=embed)
 
 
 bot.run(NOMIC_TOKEN)
