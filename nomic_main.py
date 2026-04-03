@@ -4,7 +4,7 @@ import discord
 import sqlite3
 import math
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from reactionmenu.views_menu import ViewMenu
 from reactionmenu.buttons import ViewButton
@@ -62,6 +62,18 @@ wheat_color = 0xf5c12f
 async def on_ready():
     await bot.tree.sync()
     print(f"Bot logged in as {bot.user}")
+    ping.start()
+
+
+# logging
+
+log_channel = 1486887458997272676
+
+@tasks.loop(minutes=10)
+async def ping():
+    channel = bot.get_channel(log_channel)
+    await channel.send('ping') # type: ignore
+
 
 # ======Functions======
 
