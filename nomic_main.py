@@ -9,13 +9,6 @@ from dotenv import load_dotenv
 from reactionmenu.views_menu import ViewMenu
 from reactionmenu.buttons import ViewButton
 import random
-import logging
-import typing
-
-logging.basicConfig(level=logging.INFO)
-
-import certifi
-os.environ["SSL_CERT_FILE"] = certifi.where()
 
 # Database setup
 dirname = os.path.dirname(__file__)
