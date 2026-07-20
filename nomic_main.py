@@ -340,133 +340,133 @@ def player_info(
 
 # ================== COMMANDS ==================
 
-@bot.tree.command(description="Add a new player to the score database.")
-@app_commands.describe(
-    member="Discord user to add (mention or username).",
-    name="Non-Discord player name to add (ignored if member is provided).",
-)
-async def add(
-    interaction: discord.Interaction,
-    member: discord.Member | None = None,
-    name: str | None = None,
-):
-    if not (info := player_info(interaction.guild, member, name)):
-        await interaction.response.send_message(
-            "You must provide either a member or a name to add.",
-            ephemeral=True,
-        )
-        return
+# @bot.tree.command(description="Add a new player to the score database.")
+# @app_commands.describe(
+#     member="Discord user to add (mention or username).",
+#     name="Non-Discord player name to add (ignored if member is provided).",
+# )
+# async def add(
+#     interaction: discord.Interaction,
+#     member: discord.Member | None = None,
+#     name: str | None = None,
+# ):
+#     if not (info := player_info(interaction.guild, member, name)):
+#         await interaction.response.send_message(
+#             "You must provide either a member or a name to add.",
+#             ephemeral=True,
+#         )
+#         return
 
-    discord_id, name = info
+#     discord_id, name = info
 
-    t = "Doug" if discord_id is None else "User"
-    starting_score = default_score()
-    if add_score(starting_score, discord_id, name):
-        await interaction.response.send_message(
-            f"{t} {name} was added with {starting_score} points!"
-        )
-    else:
-        await interaction.response.send_message(
-            f"{t} {name} was not added! They may already exist.",
-            ephemeral=True,
-        )
-
-
-@bot.tree.command(description="Update or view a player's score.")
-@app_commands.describe(
-    member="Discord user to update (mention or username). Command user by default.",
-    name="Non-Discord player name to update (ignored if member is provided).",
-    delta="Amount to change the score by (default 0 to just view score).",
-)
-async def update(
-    interaction: discord.Interaction,
-    member: discord.Member | None = None,
-    name: str | None = None,
-    delta: int = 0,
-):
-    if not (info := player_info(interaction.guild, member, name)):
-        discord_id = interaction.user.id
-        name = interaction.user.display_name
-    else:
-        discord_id, name = info
-
-    t = "Doug" if discord_id is None else "User"
-    before_score, after_score = update_score(delta, discord_id, name)
-    if before_score is None:
-        await interaction.response.send_message(
-            f"{t} {name} does not exist. Please add them first.",
-            ephemeral=True,
-        )
-    elif delta == 0:
-        await interaction.response.send_message(f"{t} {name}'s score: {before_score}")
-    else:
-        await interaction.response.send_message(
-            f"{t} {name}'s score: {before_score} -> {after_score}"
-        )
+#     t = "Doug" if discord_id is None else "User"
+#     starting_score = default_score()
+#     if add_score(starting_score, discord_id, name):
+#         await interaction.response.send_message(
+#             f"{t} {name} was added with {starting_score} points!"
+#         )
+#     else:
+#         await interaction.response.send_message(
+#             f"{t} {name} was not added! They may already exist.",
+#             ephemeral=True,
+#         )
 
 
-@bot.tree.command(description="Remove a player from the score database.")
-@app_commands.describe(
-    member="Discord user to remove (mention or username).",
-    name="Non-Discord player name to remove (ignored if member is provided).",
-)
-async def remove(
-    interaction: discord.Interaction,
-    member: discord.Member | None = None,
-    name: str | None = None,
-):
-    if not (info := player_info(interaction.guild, member, name)):
-        await interaction.response.send_message(
-            "You must provide either a member or a name to remove.",
-            ephemeral=True,
-        )
-        return
+# @bot.tree.command(description="Update or view a player's score.")
+# @app_commands.describe(
+#     delta="Amount to change the score by (default 0 to just view score).",
+#     member="Discord user to update (mention or username). Command user by default.",
+#     name="Non-Discord player name to update (ignored if member is provided).",
+# )
+# async def update(
+#     interaction: discord.Interaction,
+#     delta: int = 0,
+#     member: discord.Member | None = None,
+#     name: str | None = None,
+# ):
+#     if not (info := player_info(interaction.guild, member, name)):
+#         discord_id = interaction.user.id
+#         name = interaction.user.display_name
+#     else:
+#         discord_id, name = info
 
-    discord_id, name = info
+#     t = "Doug" if discord_id is None else "User"
+#     before_score, after_score = update_score(delta, discord_id, name)
+#     if before_score is None:
+#         await interaction.response.send_message(
+#             f"{t} {name} does not exist. Please add them first.",
+#             ephemeral=True,
+#         )
+#     elif delta == 0:
+#         await interaction.response.send_message(f"{t} {name}'s score: {before_score}")
+#     else:
+#         await interaction.response.send_message(
+#             f"{t} {name}'s score: {before_score} -> {after_score}"
+#         )
 
-    t = "Doug" if discord_id is None else "User"
-    if remove_score(discord_id, name):
-        await interaction.response.send_message(f"{t} {name} was removed!")
-    else:
-        await interaction.response.send_message(
-            f"{t} {name} does not exist.", ephemeral=True
-        )
+
+# @bot.tree.command(description="Remove a player from the score database.")
+# @app_commands.describe(
+#     member="Discord user to remove (mention or username).",
+#     name="Non-Discord player name to remove (ignored if member is provided).",
+# )
+# async def remove(
+#     interaction: discord.Interaction,
+#     member: discord.Member | None = None,
+#     name: str | None = None,
+# ):
+#     if not (info := player_info(interaction.guild, member, name)):
+#         await interaction.response.send_message(
+#             "You must provide either a member or a name to remove.",
+#             ephemeral=True,
+#         )
+#         return
+
+#     discord_id, name = info
+
+#     t = "Doug" if discord_id is None else "User"
+#     if remove_score(discord_id, name):
+#         await interaction.response.send_message(f"{t} {name} was removed!")
+#     else:
+#         await interaction.response.send_message(
+#             f"{t} {name} does not exist.", ephemeral=True
+#         )
 
 
-@bot.tree.command(description="View the top players on the leaderboard.")
-@app_commands.describe(
-    number="Number of players to show on the leaderboard (default/max 25).",
-    start="Place to start the leaderboard from (default 1).",
-)
-async def leaderboard(
-    interaction: discord.Interaction, number: int = 25, start: int = 1
-):
-    guild = interaction.guild
-    if guild is None:
-        await interaction.response.send_message(
-            "This command can only be used in a server.",
-            ephemeral=True,
-        )
-        return
+# @bot.tree.command(description="View the top players on the leaderboard.")
+# @app_commands.describe(
+#     number="Number of players to show on the leaderboard (default/max 25).",
+#     start="Place to start the leaderboard from (default 1).",
+# )
+# async def leaderboard(
+#     interaction: discord.Interaction, number: int = 25, start: int = 1
+# ):
+#     guild = interaction.guild
+#     if guild is None:
+#         await interaction.response.send_message(
+#             "This command can only be used in a server.",
+#             ephemeral=True,
+#         )
+#         return
 
-    top_scores = get_scores(limit=min(number, 25), offset=max(start - 1, 0))
+#     top_scores = get_scores(limit=min(number, 25), offset=max(start - 1, 0))
 
-    embed = discord.Embed(title="Leaderboard", color=discord.Color.blue())
+#     embed = discord.Embed(title="Leaderboard", color=discord.Color.blue())
 
-    for i, (discord_id, name, score) in enumerate(top_scores, start=start):
-        if discord_id is not None:
-            user = guild.get_member(discord_id)
-            display_name = user.display_name if user else f"User {discord_id}"
-        else:
-            display_name = name
+#     for i, (discord_id, name, score) in enumerate(top_scores, start=start):
+#         if discord_id is not None:
+#             user = guild.get_member(discord_id)
+#             display_name = user.display_name if user else f"User {discord_id}"
+#         else:
+#             display_name = name
 
-        t = "Doug" if discord_id is None else "User"
+#         t = "Doug" if discord_id is None else "User"
 
-        embed.add_field(
-            name=f"{i}. {t} {display_name}", value=f"Score: {score}", inline=False
-        )
+#         embed.add_field(
+#             name=f"{i}. {t} {display_name}", value=f"Score: {score}", inline=False
+#         )
 
-    await interaction.response.send_message(embed=embed)
+#     await interaction.response.send_message(embed=embed)
 
 
 bot.run(NOMIC_TOKEN)
