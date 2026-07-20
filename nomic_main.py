@@ -124,7 +124,8 @@ description='''*Rule finding*
 *Utilities*
 `/challenge [n]` - Look up point values for multiplayer challenges.
 `/total_rules`, `/random_rule`, `/random_mutable_rule` - Self-explanatory.
-`/list_rules` - List all the rule numbers in the database, for doc editing/checking''', 
+`/list_rules` - List all the rule numbers in the database, for doc editing/checking.
+`/export_rules_doc` - Exports the rules as a markdown file.''', 
 color=wheat_color))
 
 
@@ -276,6 +277,42 @@ async def list_rules(interaction: discord.Interaction):
 
     desc = 'Immutable: ' + ', '.join(str(row[0]) for row in immutable) + '\nMutable: ' + ', '.join(str(row[0]) for row in mutable)
     await interaction.response.send_message(embed = discord.Embed(title="Rule numbers", description=desc, color=wheat_color))
+
+# export rules markdown (thanks Copilot)
+@bot.tree.command(name="export_rules_doc", description="Export rules database to a markdown file and send it.")
+async def export_rules_doc(interaction: discord.Interaction):
+    conn = sqlite3.connect(data_file)
+    cursor = conn.cursor()
+    cursor.execute('SELECT number, text, mutable FROM rules WHERE mutable = 0 ORDER BY number ASC')
+    immutable_rules = cursor.fetchall()
+    cursor.execute('SELECT number, text, mutable FROM rules WHERE mutable = 1 ORDER BY number ASC')
+    mutable_rules = cursor.fetchall()
+    conn.close()
+
+    lines = []
+    if immutable_rules:
+        lines.append('## Immutable Rules')
+        lines.append('')
+        for number, text, _ in immutable_rules:
+            lines.append(f'#### {number}')
+            lines.append(text)
+            lines.append('')
+
+    if mutable_rules:
+        lines.append('## Mutable Rules')
+        lines.append('')
+        for number, text, _ in mutable_rules:
+            lines.append(f'#### {number}')
+            lines.append(text)
+            lines.append('')
+
+    md_text = '\n'.join(lines).rstrip() + '\n'
+    file_path = os.path.join(dirname, 'rules.md')
+    with open(file_path, 'w', encoding='utf-8') as md_file:
+        md_file.write(md_text)
+
+    await interaction.response.send_message(content='Exported rules to markdown:', file=discord.File(file_path))
+
 
 # ====================
 
