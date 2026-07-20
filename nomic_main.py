@@ -117,10 +117,14 @@ async def send_menu(title, msg, interaction, max_length):
 @bot.tree.command(name="help", description="View commands.")
 async def help(interaction: discord.Interaction):
     await interaction.response.send_message(embed=discord.Embed(title="Help", 
-description='''`/rule [number] [max_length]` - Look up a rule. Enter 0 to send the whole rule across multiple messages, or a number between 1-4096 to send a single embed with pagination.
-`/find_text [text] [hidden]` - Look up rules containing a string. Ignores all alphanumeric characters. Hidden (default=False) sends the message ephemerally.
+description='''*Rule finding*
+`/rule [number] [max_length]` - Look up a rule. Enter 0 to send the whole rule across multiple messages, or a number between 1-4096 to send a single embed with pagination.
+`/find_text [text] [hidden]` - Look up rules containing a string. Ignores all non-alphanumeric characters. Hidden (default=False) sends the message ephemerally.
+
+*Utilities*
 `/challenge [n]` - Look up point values for multiplayer challenges.
-`/stalin` - Execute step 1 of Stalin's algorithm.''', 
+`/total_rules`, `/random_rule`, `/random_mutable_rule` - Self-explanatory.
+`/list_rules` - List all the rule numbers in the database, for doc editing/checking''', 
 color=wheat_color))
 
 
@@ -204,9 +208,9 @@ async def challenge(interaction: discord.Interaction, players: int):
             await interaction.response.send_message(', '.join(points))
 
 
-# random rule selector for tsardom
-@bot.tree.command(name="stalin", description="Pick a random rule to be DESTROYED.")
-async def stalin(interaction: discord.Interaction):
+# random rule selector
+@bot.tree.command(name="random_rule", description="Pick a random rule!")
+async def random_rule(interaction: discord.Interaction):
     conn = sqlite3.connect(data_file)
     cursor = conn.cursor()
     cursor.execute('SELECT number, text FROM rules')
@@ -221,7 +225,57 @@ async def stalin(interaction: discord.Interaction):
 
     desc = 'Roll result (d' + str(len(rows)) + '): `' + str(roll+1) + '`\nSelected rule: `' + str(selected_rule[0]) + '`'
     # display roll result, selected rule
-    await interaction.response.send_message(embed = discord.Embed(title="Time for the Purge.", description=desc, color=wheat_color))
+    await interaction.response.send_message(embed = discord.Embed(title="Random rule", description=desc, color=wheat_color))
+
+
+# random MUTABLE rule selector
+@bot.tree.command(name="random_mutable_rule", description="Pick a random mutable rule!")
+async def random_mutable_rule(interaction: discord.Interaction):
+    conn = sqlite3.connect(data_file)
+    cursor = conn.cursor()
+    cursor.execute('SELECT number, text FROM rules WHERE mutable=1')
+    rows = cursor.fetchall()
+    conn.close()
+
+    rows.sort(key=lambda x: x[0]) # sort by number
+
+    # roll
+    roll = random.randint(0, len(rows)-1) # remember to add 1
+    selected_rule = rows[roll]
+
+    desc = 'Roll result (d' + str(len(rows)) + '): `' + str(roll+1) + '`\nSelected rule: `' + str(selected_rule[0]) + '`'
+    # display roll result, selected rule
+    await interaction.response.send_message(embed = discord.Embed(title="Random mutable rule", description=desc, color=wheat_color))
+
+
+# show number of rules
+@bot.tree.command(name="total_rules", description="Show the total number of rules.")
+async def total_rules(interaction: discord.Interaction):
+    conn = sqlite3.connect(data_file)
+    cursor = conn.cursor()
+    cursor.execute('SELECT number, text FROM rules WHERE mutable = 1')
+    mutable = cursor.fetchall()
+    cursor.execute('SELECT number, text FROM rules WHERE mutable = 0')
+    immutable = cursor.fetchall()
+    conn.close()
+
+    desc = 'Immutable: ' + str(len(immutable)) + '\nMutable: ' + str(len(mutable)) + '\nTotal: ' + str(len(immutable)+len(mutable))
+    await interaction.response.send_message(embed = discord.Embed(title="Total number of rules", description=desc, color=wheat_color))
+
+
+# list rule numbers
+@bot.tree.command(name="list_rules", description="List all the rule numbers.")
+async def list_rules(interaction: discord.Interaction):
+    conn = sqlite3.connect(data_file)
+    cursor = conn.cursor()
+    cursor.execute('SELECT number, text FROM rules WHERE mutable = 1')
+    mutable = cursor.fetchall()
+    cursor.execute('SELECT number, text FROM rules WHERE mutable = 0')
+    immutable = cursor.fetchall()
+    conn.close()
+
+    desc = 'Immutable: ' + ', '.join(str(row[0]) for row in immutable) + '\nMutable: ' + ', '.join(str(row[0]) for row in mutable)
+    await interaction.response.send_message(embed = discord.Embed(title="Rule numbers", description=desc, color=wheat_color))
 
 # ====================
 
